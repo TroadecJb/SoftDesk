@@ -6,9 +6,6 @@ from account.serializers import CustomUserSerializer
 
 
 class ContributorSerializer(serializers.ModelSerializer):
-    # project = serializers.SerializerMethodField()
-    # user_id = serializers.SerializerMethodField()
-
     class Meta:
         model = Contributor
         fields = [
@@ -18,10 +15,6 @@ class ContributorSerializer(serializers.ModelSerializer):
             "permission",
             "role",
         ]
-
-    # def get_project(self, instance):
-    #     queryset = Project.objects.filter(project=instance.id)
-    #     return ProjectDetailSerializer(queryset).data
 
 
 class CommentListSerializer(serializers.ModelSerializer):
@@ -102,7 +95,6 @@ class ProjectListSerializer(serializers.ModelSerializer):
 
 
 class ProjectDetailSerializer(serializers.ModelSerializer):
-    # contributors = serializers.SerializerMethodField()
     issues = serializers.SerializerMethodField()
 
     class Meta:
@@ -116,11 +108,6 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             # "contributors",
             "issues",
         ]
-
-    # def get_contributors(self, instance):
-    #     queryset = instance.contributors
-    #     serializer = ContributorSerializer(queryset, many=True)
-    #     return serializer.data
 
     def get_issues(self, instance):
         queryset = Issue.objects.filter(project_id=instance.id)

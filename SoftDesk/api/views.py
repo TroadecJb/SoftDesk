@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 
@@ -16,16 +17,12 @@ from api.serializers import (
     ContributorSerializer,
 )
 from api import permissions
-
-
-# def get_permissions(self):
-#     if self.action == "list" or self.action == "get":
-#         permission_classes = [IsContributor]
-#     elif self.action == "update" or self.action == "partial_update":
-#         permission_classes = [IsAuthor]
-#     else:
-#         permission_classes = [IsAuthor | IsAdminUser]
-#     return [permission() for permission in permission_classes]
+from api.check import (
+    project_exists,
+    issue_exists,
+    comment_exists,
+    contributor_exists,
+)
 
 
 def list_project_where_contributor(request):
@@ -75,11 +72,16 @@ class ProjectViewset(MultipleSerializerMixin, ModelViewSet):
 
 
 class ContributorViewset(ModelViewSet):
+    queryset = Contributor.objects.all()
     serializer_class = ContributorSerializer
     permission_classes = [permissions.ContributorPermission]
 
     def get_queryset(self):
-        return Contributor.objects.filter(project=self.kwargs["project_pk"])
+        try:
+            project = Project.objects.get(id=self.kwargs["project_pk"])
+        except Project.DoesNotExist:
+            raise NotFound
+        return self.queryset.filter(project=project)
 
     def perform_create(self, serializer):
         project = Project.objects.get(id=self.kwargs["project_pk"])
@@ -87,35 +89,42 @@ class ContributorViewset(ModelViewSet):
 
 
 class IssueViewset(MultipleSerializerMixin, ModelViewSet):
+    queryset = Issue.objects.all()
     serializer_class = IssueListSerializer
     detail_serializer_class = IssueDetailSerializer
     permission_classes = [permissions.IssuePermission]
 
     def get_queryset(self):
-        if self.detail is True:
-            return Issue.objects.filter(project__in=self.kwargs["project_pk"])
-        else:
-            project_list = list_project_where_contributor(self.request)
-            return Issue.objects.filter(project__in=project_list)
+        return Issue.objects.filter(project__in=self.kwargs["project_pk"])
 
     def perform_create(self, serializer):
-        project = Project.objects.get(id=self.kwargs["project_pk"])
-        serializer.save(author=self.request.user, project=project)
+        try:
+            project = Project.objects.get(id=self.kwargs["project_pk"])
+        except Project.DoesNotExist:
+            raise NotFound
+        if not self.request.data["assignee"]:
+            serializer.save(
+                author=self.request.user,
+                assignee=self.request.user,
+                project=project,
+            )
+        else:
+            serializer.save(author=self.request.user, project=project)
 
 
 class CommentViewset(MultipleSerializerMixin, ModelViewSet):
+    queryset = Comment.objects.all()
     serializer_class = CommentListSerializer
     detail_serializer_class = CommentDetailSerializer
     permission_classes = [permissions.CommentPermission]
 
     def get_queryset(self):
-        if self.detail is True:
-            return Comment.objects.filter(issue=self.kwargs["issues_pk"])
-        else:
-            project_list = list_project_where_contributor(self.request)
-            return Comment.objects.filter(issue__project__in=project_list)
+        return self.queryset.filter(issue__in=self.kwargs["issues_pk"])
 
     def perform_create(self, serializer):
-        issue = Issue.objects.get(id=self.kwargs["issues_pk"])
+        try:
+            issue = Issue.objects.get(id=self.kwargs["issues_pk"])
+        except Issue.DoesNotExist:
+            raise NotFound
+        print(self.kwargs["issues_pk"])
         serializer.save(author=self.request.user, issue=issue)
-        return

@@ -30,7 +30,7 @@ issue_router.register("comments", CommentViewset, basename="comments")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("account/", include("account.urls")),
+    path("", include("account.urls")),
     path("", include(router.urls)),
     path("", include(project_router.urls)),
     path("", include(issue_router.urls)),
