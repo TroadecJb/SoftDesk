@@ -25,7 +25,7 @@ class Contributor(models.Model):
     permission = models.CharField(
         max_length=20, choices=PERMISSION_CHOICES, default=LIMITED
     )
-    role = models.CharField(max_length=30)
+    role = models.CharField(max_length=30, blank=True)
 
     class Meta:
         constraints = [

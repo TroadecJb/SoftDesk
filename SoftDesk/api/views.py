@@ -22,6 +22,7 @@ from api.check import (
     issue_exists,
     comment_exists,
     contributor_exists,
+    user_exists,
 )
 
 
