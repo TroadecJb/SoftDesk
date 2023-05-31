@@ -1,5 +1,8 @@
 from django.contrib import admin
-from api.models import Contributor, Project, Issue, Comment
+from api.models.Contributor import Contributor
+from api.models.Project import Project
+from api.models.Issue import Issue
+from api.models.Comment import Comment
 
 
 class ProjectAdmin(admin.ModelAdmin):

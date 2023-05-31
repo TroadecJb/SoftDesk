@@ -1,8 +1,10 @@
 from rest_framework import serializers
-from account.models import CustomUser
+from account.models.CustomUser import CustomUser
 
 
 class SignupSerializer(serializers.ModelSerializer):
+    """Signup serializer."""
+
     password2 = serializers.CharField(
         style={"input_type": "password"}, write_only=True
     )
@@ -36,9 +38,3 @@ class SignupSerializer(serializers.ModelSerializer):
         user.set_password(self.validated_data["password"])
         user.save()
         return user
-
-
-class CustomUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CustomUser
-        fields = ["first_name", "last_name"]

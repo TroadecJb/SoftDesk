@@ -3,7 +3,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 
 
 from api.models import Project, Issue, Comment, Contributor
@@ -27,6 +27,9 @@ from api.check import (
 
 
 def list_project_where_contributor(request):
+    """
+    Returns a list of projects where the user is a contributor.
+    """
     current_user = request.user.id
     return [
         contributor.project.id
@@ -50,13 +53,21 @@ class MultipleSerializerMixin:
 
 
 class ProjectViewset(MultipleSerializerMixin, ModelViewSet):
+    """Viewset for actions on a project object."""
+
     serializer_class = ProjectListSerializer
     detail_serializer_class = ProjectDetailSerializer
-    permission_classes = [permissions.ProjectPermission]
+    permission_classes = [permissions.ProjectPermission, IsAuthenticated]
 
     def get_queryset(self):
+        """
+        Get the projects list of the request user.
+        Or get the project's detail if the project's id is specified in the reques.
+        """
         if self.detail is True:
-            return Project.objects.filter(id=self.kwargs["pk"])
+            project_id = self.kwargs["pk"]
+            if project_exists(project_id):
+                return Project.objects.filter(id=self.kwargs["pk"])
         else:
             project_list = list_project_where_contributor(self.request)
             return Project.objects.filter(id__in=project_list)
@@ -73,59 +84,78 @@ class ProjectViewset(MultipleSerializerMixin, ModelViewSet):
 
 
 class ContributorViewset(ModelViewSet):
+    """Viewset for actions on project's contributors."""
+
     queryset = Contributor.objects.all()
     serializer_class = ContributorSerializer
-    permission_classes = [permissions.ContributorPermission]
+    permission_classes = [permissions.ContributorPermission, IsAuthenticated]
 
     def get_queryset(self):
-        try:
-            project = Project.objects.get(id=self.kwargs["project_pk"])
-        except Project.DoesNotExist:
-            raise NotFound
-        return self.queryset.filter(project=project)
+        """Get the project's contributors list."""
+        project_id = self.kwargs["project_pk"]
+        if project_exists(project_id):
+            project = Project.objects.get(id=project_id)
+            return self.queryset.filter(project=project)
 
     def perform_create(self, serializer):
-        project = Project.objects.get(id=self.kwargs["project_pk"])
-        serializer.save(project=project)
+        """Add a user as contributor to the project."""
+        project_id = self.kwargs["project_pk"]
+        if project_exists(project_id):
+            project = Project.objects.get(id=project_id)
+            serializer.save(project=project)
 
 
 class IssueViewset(MultipleSerializerMixin, ModelViewSet):
+    """Viewwset for actions on project's issues."""
+
     queryset = Issue.objects.all()
     serializer_class = IssueListSerializer
     detail_serializer_class = IssueDetailSerializer
-    permission_classes = [permissions.IssuePermission]
+    permission_classes = [permissions.IssuePermission, IsAuthenticated]
 
     def get_queryset(self):
-        return Issue.objects.filter(project__in=self.kwargs["project_pk"])
+        """Get the issue(s) for the project."""
+        project_id = self.kwargs["project_pk"]
+        if project_exists(project_id):
+            return Issue.objects.filter(project__in=self.kwargs["project_pk"])
 
     def perform_create(self, serializer):
-        try:
-            project = Project.objects.get(id=self.kwargs["project_pk"])
-        except Project.DoesNotExist:
-            raise NotFound
-        if not self.request.data["assignee"]:
-            serializer.save(
-                author=self.request.user,
-                assignee=self.request.user,
-                project=project,
-            )
-        else:
-            serializer.save(author=self.request.user, project=project)
+        """
+        Create a new issue for the project if it exists.
+        The issue's assignee can be specify otherwise the request user is set by default as the assignee.
+        """
+        project_id = self.kwargs["project_pk"]
+        if project_exists(project_id):
+            project = Project.objects.get(id=project_id)
+            if not self.request.data["assignee"]:
+                serializer.save(
+                    author=self.request.user,
+                    assignee=self.request.user,
+                    project=project,
+                )
+            else:
+                serializer.save(author=self.request.user, project=project)
 
 
 class CommentViewset(MultipleSerializerMixin, ModelViewSet):
+    """Viewset for actions on issue's comments."""
+
     queryset = Comment.objects.all()
     serializer_class = CommentListSerializer
     detail_serializer_class = CommentDetailSerializer
-    permission_classes = [permissions.CommentPermission]
+    permission_classes = [permissions.CommentPermission, IsAuthenticated]
 
     def get_queryset(self):
-        return self.queryset.filter(issue__in=self.kwargs["issues_pk"])
+        """Get the comment(s) for the issue."""
+        issue_id = self.kwargs["issues_pk"]
+        if issue_exists(issue_id):
+            return self.queryset.filter(issue__in=self.kwargs["issues_pk"])
 
     def perform_create(self, serializer):
-        try:
-            issue = Issue.objects.get(id=self.kwargs["issues_pk"])
-        except Issue.DoesNotExist:
-            raise NotFound
-        print(self.kwargs["issues_pk"])
-        serializer.save(author=self.request.user, issue=issue)
+        """
+        Create a new comment for the issue if it exists.
+        """
+        issue_id = self.kwargs["issues_pk"]
+        if issue_exists(issue_id):
+            issue = Issue.objects.get(id=issue_id)
+            serializer.save(author=self.request.user, issue=issue)
