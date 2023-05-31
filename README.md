@@ -39,4 +39,4 @@ drf-nested-routers==0.93.4
 
 ---
 ## Documentation
-To see the documentation click [here](https://documenter.getpostman.com/view/27468746/2s93m8yg3M)
+To see the documentation click [here](https://documenter.getpostman.com/view/27468746/2s93m8yg3M).
