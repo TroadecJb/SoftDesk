@@ -1,8 +1,4 @@
-from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.response import Response
-from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -57,7 +53,7 @@ class ProjectViewset(MultipleSerializerMixin, ModelViewSet):
 
     serializer_class = ProjectListSerializer
     detail_serializer_class = ProjectDetailSerializer
-    permission_classes = [permissions.ProjectPermission, IsAuthenticated]
+    permission_classes = [IsAuthenticated, permissions.ProjectPermission]
 
     def get_queryset(self):
         """
@@ -88,7 +84,7 @@ class ContributorViewset(ModelViewSet):
 
     queryset = Contributor.objects.all()
     serializer_class = ContributorSerializer
-    permission_classes = [permissions.ContributorPermission, IsAuthenticated]
+    permission_classes = [IsAuthenticated, permissions.ContributorPermission]
 
     def get_queryset(self):
         """Get the project's contributors list."""
@@ -111,7 +107,7 @@ class IssueViewset(MultipleSerializerMixin, ModelViewSet):
     queryset = Issue.objects.all()
     serializer_class = IssueListSerializer
     detail_serializer_class = IssueDetailSerializer
-    permission_classes = [permissions.IssuePermission, IsAuthenticated]
+    permission_classes = [IsAuthenticated, permissions.IssuePermission]
 
     def get_queryset(self):
         """Get the issue(s) for the project."""
@@ -143,7 +139,7 @@ class CommentViewset(MultipleSerializerMixin, ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentListSerializer
     detail_serializer_class = CommentDetailSerializer
-    permission_classes = [permissions.CommentPermission, IsAuthenticated]
+    permission_classes = [IsAuthenticated, permissions.CommentPermission]
 
     def get_queryset(self):
         """Get the comment(s) for the issue."""

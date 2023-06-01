@@ -1,7 +1,7 @@
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import NotFound
 
-from api.models import Project, Contributor, Issue, Comment
+from api.models import Project
 from api.check import user_is_contributor
 
 SAFE_METHODS = (
